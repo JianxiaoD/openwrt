@@ -1,0 +1,47 @@
+name: Build ImmortalWRT
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev gawk git gettext libssl-dev xsltproc zlib1g-dev file wget unzip python
+
+    - name: Clone ImmortalWRT
+      run: git clone https://github.com/immortalwrt/immortalwrt.git
+
+    - name: Update and install feeds
+      run: |
+        cd immortalwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Configure build
+      run: |
+        cd immortalwrt
+        make menuconfig
+
+    - name: Build firmware
+      run: |
+        cd immortalwrt
+        make -j$(nproc)
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@v2
+      with:
+        name: firmware
+        path: immortalwrt/bin/targets
